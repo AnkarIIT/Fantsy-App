@@ -1,7 +1,3 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
-</div>
-
 # Royale Gaming
 
 A polished Android fantasy + arena gaming app (Compose + Room + real wallet flows).
@@ -42,8 +38,6 @@ The Gradle wrapper scripts + jar are included (or will be auto-generated on firs
 - Referral share works.
 - Currency normalized to ₹ for consistency with Indian payment context (UPI, PAN, Aadhaar).
 - Gradle wrapper bootstrapped for reproducible CLI builds.
-
-View original template in AI Studio if needed.
 
 ## Wallet Demo Seed (first run)
 - Deposit: ₹250
