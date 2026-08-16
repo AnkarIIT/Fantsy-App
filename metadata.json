@@ -1,0 +1,6 @@
+{
+  "name": "Royale Gaming",
+  "description": "Ultra-premium, real-money gaming lobby designed with smooth performance, real-time wallet system, instant matches, and fully secure deposits and withdrawals.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
