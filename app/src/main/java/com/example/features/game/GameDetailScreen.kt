@@ -67,14 +67,19 @@ fun GameDetailScreen(
     // Tournament ids (m_*) already deduct their entry fee via registerForTournament,
     // so those entries are pre-paid. Featured grid ids (g_*) must pay the game stake.
     val feeAlreadyPaid = matchId.startsWith("m_")
-    var stakeDeducted by rememberSaveable { mutableStateOf(false) }
+    var stakeDeducted by rememberSaveable { mutableStateOf(feeAlreadyPaid) }
 
     // Dedicated games (ludo, carrom, bubble, snake, andar, rummy, teenpatti, slots, chess)
     // manage their own stake via requireStake. Only the rocket multiplier crash game is
     // driven by the matchmaking flow below, so the entry stake is only deducted for it.
+    // Use explicit positive matching for known crash games to avoid misclassification.
     val isCrashGame = matchId.lowercase().let { lower ->
-        !(listOf("ludo", "carrom", "bubble", "snake", "andar", "rummy", "teenpatti", "slots", "chess")
-            .any { lower.contains(it) })
+        when {
+            lower.contains("aviator") || lower.contains("multiplier") || lower == "g_aviator" -> true
+            listOf("ludo", "carrom", "bubble", "snake", "andar", "rummy", "teenpatti", "slots", "chess")
+                .any { lower.contains(it) } -> false
+            else -> false // Unknown games default to non-crash (safer default)
+        }
     }
 
     // Multiplier crash simulator values
