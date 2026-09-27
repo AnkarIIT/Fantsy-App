@@ -34,10 +34,24 @@ private fun rummyDeck(): List<RummyCard> =
 
 private fun cardKey(c: RummyCard): Int = rummyRanks.indexOf(c.rank) * 4 + rummySuits.indexOf(c.suit)
 
-private fun isSequence(g: List<RummyCard>): Boolean =
-    g.map { rummyRanks.indexOf(it.rank) }.sorted().let { r ->
-        r.size >= 3 && r.last() - r.first() == r.size - 1 && g.map { it.suit }.distinct().size == 1
-    }
+private fun isSequence(g: List<RummyCard>): Boolean {
+    if (g.size < 3) return false
+    val suits = g.map { it.suit }.distinct()
+    if (suits.size != 1) return false
+
+    val indices = g.map { rummyRanks.indexOf(it.rank) }.sorted()
+
+    // Check normal consecutive sequence (e.g., 2-3-4, 10-J-Q)
+    val isConsecutive = indices.last() - indices.first() == indices.size - 1 &&
+        indices.windowed(2).all { it[1] - it[0] == 1 }
+
+    // Check A-2-3 wrapping (A=0, 2=1, 3=2) - already handled by consecutive
+    // Check Q-K-A wrapping (Q=10, K=11, A=0) - needs special handling
+    val isWrappedQKA = indices.size >= 3 && indices.contains(0) && indices.contains(10) && indices.contains(11) &&
+        indices.filter { it != 0 && it != 10 && it != 11 }.isEmpty()
+
+    return isConsecutive || isWrappedQKA
+}
 
 private fun findGroups(hand: List<RummyCard>): List<List<RummyCard>>? {
     if (hand.isEmpty()) return emptyList()
@@ -81,30 +95,8 @@ fun RummyGameView(
     var won by remember { mutableStateOf(false) }
     var dealt by remember { mutableStateOf(false) }
     val stake = 15.0
-    var stakeDeducted by rememberSaveable { mutableStateOf(feeAlreadyPaid) }
-    var stakePending by rememberSaveable { mutableStateOf(false) }
-    var entryError by remember { mutableStateOf<String?>(null) }
-    val scope = rememberCoroutineScope()
 
-    fun requireStake(action: () -> Unit) {
-        if (stakeDeducted) {
-            action()
-            return
-        }
-        if (stakePending) return
-        stakePending = true
-        scope.launch {
-            val result = viewModel.deductStake(stake, "Entry: Rummy Royale 13")
-            stakePending = false
-            if (result.isSuccess) {
-                stakeDeducted = true
-                entryError = null
-                action()
-            } else {
-                entryError = result.exceptionOrNull()?.message ?: "Insufficient balance to play."
-            }
-        }
-    }
+    val (stakeState, requireStake, scope) = useGameStake(stake, "Rummy Royale 13", viewModel, feeAlreadyPaid)
 
     fun deal() {
         val deck = rummyDeck().shuffled()
@@ -147,7 +139,7 @@ fun RummyGameView(
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             Column(Modifier.fillMaxSize().padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        entryError?.let {
+        stakeState.entryError?.let {
             Text(it, color = Color.Red, fontSize = 12.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
         }
 
