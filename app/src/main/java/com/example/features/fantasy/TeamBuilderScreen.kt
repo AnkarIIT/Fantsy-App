@@ -67,9 +67,9 @@ private fun validateTeam(
     if (team1Count > rules.maxPerTeam) errors.add("Max ${rules.maxPerTeam} players from ${match.team1.name}!")
     if (team2Count > rules.maxPerTeam) errors.add("Max ${rules.maxPerTeam} players from ${match.team2.name}!")
 
-    // Credit budget (100 max)
+    // Credit budget (100 max) - use epsilon to avoid floating-point precision issues
     val totalCredits = players.sumOf { it.credit }
-    if (totalCredits > 100.0) {
+    if (totalCredits > 100.005) {
         errors.add("Credit budget exceeded! Total credits ${String.format("%.1f", totalCredits)} > 100.")
     }
 
