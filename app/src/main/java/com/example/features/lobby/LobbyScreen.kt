@@ -37,6 +37,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -46,6 +47,9 @@ import com.example.data.models.GameItem
 import com.example.data.models.TournamentMatch
 import com.example.ui.theme.*
 import kotlinx.coroutines.launch
+import coil.compose.AsyncImage
+import coil.compose.rememberAsyncImagePainter
+import coil.request.ImageRequest
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -85,24 +89,7 @@ fun LobbyScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Canvas(modifier = Modifier.size(12.dp)) {
-                            drawCircle(color = GamingNeonCyan)
-                            drawCircle(color = Color.White, radius = 2.dp.toPx())
-                        }
-                        Text(
-                            text = "ROYALE GRAND",
-                            style = MaterialTheme.typography.titleLarge.copy(
-                                fontWeight = FontWeight.Black,
-                                letterSpacing = 1.5.sp,
-                                fontFamily = FontFamily.Monospace
-                            ),
-                            color = Color.White
-                        )
-                    }
+                    AppLogo(showText = true, size = 24)
                 },
                 actions = {
                     // Quick Wallet Wallet Chips
@@ -732,26 +719,53 @@ fun LobbyPromoSlider(onDepositClick: () -> Unit) {
 
 @Composable
 fun FeaturedGameCard(game: GameItem, onPlayClick: () -> Unit) {
+    // Game-specific gradient colors
+    val gradientColors = when (game.category) {
+        GameCategory.FANTASY -> listOf(Color(0xFF1B5E20), Color(0xFF2E7D32))
+        GameCategory.CARDS -> listOf(Color(0xFF7B1FA2), Color(0xFF8E24AA))
+        GameCategory.CASINO -> listOf(Color(0xFFBF360C), Color(0xFFD84315))
+        GameCategory.CASUAL -> listOf(Color(0xFF0D47A1), Color(0xFF1565C0))
+        GameCategory.MULTIPLIER -> listOf(Color(0xFFB71C1C), Color(0xFFC62828))
+    }
+    
+    val categoryIcon = when (game.category) {
+        GameCategory.FANTASY -> Icons.Rounded.SportsCricket
+        GameCategory.CARDS -> Icons.Rounded.Casino
+        GameCategory.CASINO -> Icons.Rounded.Style
+        GameCategory.CASUAL -> Icons.Rounded.SportsEsports
+        GameCategory.MULTIPLIER -> Icons.AutoMirrored.Rounded.TrendingUp
+    }
+
     Surface(
         modifier = Modifier
             .width(160.dp)
             .height(200.dp)
             .clickable(onClick = onPlayClick),
-        color = GamingDeepSurface,
-        shape = RoundedCornerShape(16.dp),
-        border = BorderStroke(1.dp, GamingBorderSlate)
+        color = Color.Transparent,
+        shape = RoundedCornerShape(16.dp)
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
-            // Ambient Canvas graphic representing background slots/graphics
-            Canvas(modifier = Modifier.matchParentSize()) {
+            // Background with game-specific gradient
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        brush = Brush.verticalGradient(gradientColors),
+                        shape = RoundedCornerShape(16.dp)
+                    )
+                    .clip(RoundedCornerShape(16.dp))
+            )
+            
+            // Subtle pattern overlay
+            Canvas(modifier = Modifier.matchParentSize().clip(RoundedCornerShape(16.dp))) {
                 val path = androidx.compose.ui.graphics.Path().apply {
-                    moveTo(0f, size.height * 0.4f)
-                    quadraticTo(size.width * 0.5f, size.height * 0.3f, size.width, size.height * 0.5f)
+                    moveTo(0f, size.height * 0.55f)
+                    quadraticTo(size.width * 0.5f, size.height * 0.4f, size.width, size.height * 0.6f)
                     lineTo(size.width, size.height)
                     lineTo(0f, size.height)
                     close()
                 }
-                drawPath(path, color = GamingBorderSlate.copy(alpha = 0.4f))
+                drawPath(path, color = Color.White.copy(alpha = 0.08f))
             }
 
             Column(
@@ -765,25 +779,26 @@ fun FeaturedGameCard(game: GameItem, onPlayClick: () -> Unit) {
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    // Category badge
                     Surface(
-                        color = GamingNeonCyan.copy(alpha = 0.15f),
-                        shape = CircleShape
+                        color = Color.White.copy(alpha = 0.18f),
+                        shape = RoundedCornerShape(8.dp)
                     ) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                            horizontalArrangement = Arrangement.spacedBy(2.dp)
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
                             Icon(
-                                Icons.Rounded.Person,
+                                categoryIcon,
                                 contentDescription = null,
-                                tint = GamingNeonCyan,
-                                modifier = Modifier.size(10.dp)
+                                tint = Color.White,
+                                modifier = Modifier.size(12.dp)
                             )
                             Text(
-                                text = String.format("%.1fK", game.playersCount / 1000f),
-                                color = GamingNeonCyan,
-                                fontSize = 9.sp,
+                                text = game.category.displayName,
+                                color = Color.White,
+                                fontSize = 8.sp,
                                 fontWeight = FontWeight.Bold,
                                 fontFamily = FontFamily.Monospace
                             )
@@ -800,62 +815,160 @@ fun FeaturedGameCard(game: GameItem, onPlayClick: () -> Unit) {
                                 color = Color.White,
                                 fontSize = 8.sp,
                                 fontWeight = FontWeight.Black,
-                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                             )
                         }
                     }
                 }
 
-                // Center visual slot representation
+                // Game thumbnail / artwork
                 Box(
                     modifier = Modifier
-                        .size(64.dp)
+                        .fillMaxWidth()
+                        .height(80.dp)
                         .align(Alignment.CenterHorizontally)
-                        .drawBehind {
-                            drawCircle(
-                                brush = Brush.linearGradient(
-                                    colors = listOf(GamingVibrantIndigo, GamingNeonCyan)
-                                ),
-                                style = Stroke(width = 3.dp.toPx())
-                            )
-                        },
-                    contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        imageVector = when(game.category) {
-                            GameCategory.FANTASY -> Icons.Rounded.SportsCricket
-                            GameCategory.CARDS -> Icons.Rounded.Casino
-                            GameCategory.CASINO -> Icons.Rounded.Style
-                            GameCategory.CASUAL -> Icons.Rounded.SportsEsports
-                            GameCategory.MULTIPLIER -> Icons.AutoMirrored.Rounded.TrendingUp
-                        },
-                        contentDescription = null,
-                        modifier = Modifier.size(32.dp),
-                        tint = GamingGoldAccent
-                    )
+                    if (game.imageUrl.isNotBlank()) {
+                        AsyncImage(
+                            model = ImageRequest.Builder(LocalContext.current)
+                                .data(game.imageUrl)
+                                .build(),
+                            contentDescription = game.title,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .clip(RoundedCornerShape(12.dp)),
+                            contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                        )
+                    } else {
+                        // Fallback: category icon with gradient
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(
+                                    brush = Brush.verticalGradient(
+                                        colors = gradientColors.map { it.copy(alpha = 0.8f) }
+                                    ),
+                                    shape = RoundedCornerShape(12.dp)
+                                )
+                                .clip(RoundedCornerShape(12.dp))
+                                .drawBehind {
+                                    drawCircle(
+                                        brush = Brush.radialGradient(
+                                            colors = listOf(Color.White.copy(alpha = 0.15f), Color.Transparent),
+                                            center = Offset(size.width * 0.5f, size.height * 0.5f),
+                                            radius = size.width * 0.6f
+                                        )
+                                    )
+                                },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = categoryIcon,
+                                contentDescription = null,
+                                modifier = Modifier.size(40.dp),
+                                tint = Color.White.copy(alpha = 0.9f)
+                            )
+                        }
+                    }
                 }
 
                 // Titles & Actions
-                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Text(
-                        text = game.title,
-                        color = Color.White,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 13.sp,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Text(
-                        text = game.maxMultiplier,
-                        color = GamingNeonCyan,
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Bold,
-                        fontFamily = FontFamily.Monospace
-                    )
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = game.title,
+                            color = Color.White,
+                            fontWeight = FontWeight.Black,
+                            fontSize = 14.sp,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        // Rating badge
+                        Surface(
+                            color = Color.White.copy(alpha = 0.15f),
+                            shape = RoundedCornerShape(6.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(Icons.Rounded.Star, contentDescription = null, tint = GamingGoldAccent, modifier = Modifier.size(10.dp))
+                                Text(
+                                    text = String.format("%.1f", game.rating),
+                                    color = GamingGoldAccent,
+                                    fontSize = 9.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    fontFamily = FontFamily.Monospace
+                                )
+                            }
+                        }
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        // Player count
+                        Surface(
+                            color = Color.White.copy(alpha = 0.12f),
+                            shape = RoundedCornerShape(6.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(3.dp)
+                            ) {
+                                Icon(Icons.Rounded.Person, contentDescription = null, tint = GamingNeonCyan, modifier = Modifier.size(10.dp))
+                                Text(
+                                    text = when {
+                                        game.playersCount >= 1000000 -> String.format("%.1fM", game.playersCount / 1000000f)
+                                        game.playersCount >= 1000 -> String.format("%.1fK", game.playersCount / 1000f)
+                                        else -> game.playersCount.toString()
+                                    },
+                                    color = GamingNeonCyan,
+                                    fontSize = 9.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    fontFamily = FontFamily.Monospace
+                                )
+                            }
+                        }
+                        // Max multiplier
+                        Surface(
+                            color = Color.White.copy(alpha = 0.12f),
+                            shape = RoundedCornerShape(6.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(3.dp)
+                            ) {
+                                Icon(Icons.Rounded.FlashOn, contentDescription = null, tint = GamingGoldAccent, modifier = Modifier.size(10.dp))
+                                Text(
+                                    text = game.maxMultiplier,
+                                    color = GamingGoldAccent,
+                                    fontSize = 9.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    fontFamily = FontFamily.Monospace
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }
     }
+    
+    // Play button overlay on click
+    // The whole card is clickable
 }
 
 @Composable
