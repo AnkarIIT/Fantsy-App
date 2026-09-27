@@ -9,6 +9,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowBack
+import androidx.compose.material.icons.rounded.Leaderboard
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -29,6 +30,7 @@ fun FantasyContestsScreen(
     joinedContestIds: Set<String> = emptySet(),
     onNavigateBack: () -> Unit,
     onSelectContest: (FantasyContest) -> Unit,
+    onMyContestsClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Scaffold(
@@ -47,6 +49,11 @@ fun FantasyContestsScreen(
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.Rounded.ArrowBack, contentDescription = "Back", tint = Color.White)
+                    }
+                },
+                actions = {
+                    IconButton(onClick = onMyContestsClick) {
+                        Icon(Icons.Rounded.Leaderboard, contentDescription = "My Contests", tint = GamingGoldAccent, modifier = Modifier.padding(end = 16.dp))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(

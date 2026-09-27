@@ -42,6 +42,7 @@ import com.example.features.history.ContestHistoryScreen
 import com.example.features.history.ContestHistoryItem
 import com.example.features.fantasy.FantasyMatchesScreen
 import com.example.features.fantasy.FantasyContestsScreen
+import com.example.features.fantasy.MyContestsScreen
 import com.example.features.fantasy.TeamBuilderScreen
 import com.example.features.fantasy.TeamPreviewScreen
 import com.example.ui.theme.MyApplicationTheme
@@ -277,7 +278,7 @@ fun GamingAppContainer() {
                     val matchId = backStackEntry.arguments?.getString("matchId") ?: ""
                     val match = lobbyViewModel.fantasyMatches.find { it.id == matchId }
                     val joined by lobbyViewModel.joinedFantasyContests.collectAsStateWithLifecycle()
-                    match?.let {
+match?.let {
                         FantasyContestsScreen(
                             match = it,
                             contests = lobbyViewModel.getFantasyContests(matchId),
@@ -287,11 +288,64 @@ fun GamingAppContainer() {
                                 if (!joined.contains(contest.id)) {
                                     navController.navigate("fantasy/team-builder/$matchId/${contest.id}")
                                 }
+                            },
+                            onMyContestsClick = {
+                                navController.navigate("fantasy/my-contests/$matchId")
                             }
                         )
                     }
                 }
                 
+                composable(
+                    route = "fantasy/my-contests/{matchId}",
+                    arguments = listOf(navArgument("matchId") { type = NavType.StringType })
+                ) { backStackEntry ->
+                    val matchId = backStackEntry.arguments?.getString("matchId") ?: ""
+                    val match = lobbyViewModel.fantasyMatches.find { it.id == matchId }
+                    val joined = lobbyViewModel.joinedFantasyContests.value
+                    // Sample my teams data
+                    val myTeams = listOf(
+                        com.example.features.fantasy.MyContestEntry(
+                            teamId = "team1",
+                            contestId = "contest1",
+                            teamName = "Thala's Army",
+                            rank = 1,
+                            points = 1250,
+                            winnings = 5000.0,
+                            captainName = "MS Dhoni",
+                            viceCaptainName = "Virat Kohli"
+                        ),
+                        com.example.features.fantasy.MyContestEntry(
+                            teamId = "team2",
+                            contestId = "contest2",
+                            teamName = "Hitman Squad",
+                            rank = 3,
+                            points = 1180,
+                            winnings = 1500.0,
+                            captainName = "Rohit Sharma",
+                            viceCaptainName = "Jasprit Bumrah"
+                        ),
+                        com.example.features.fantasy.MyContestEntry(
+                            teamId = "team3",
+                            contestId = "contest3",
+                            teamName = "Captain Cool",
+                            rank = 12,
+                            points = 945,
+                            winnings = 0.0,
+                            captainName = "Hardik Pandya",
+                            viceCaptainName = "Ravindra Jadeja"
+                        )
+                    )
+                    match?.let {
+                        MyContestsScreen(
+                            match = it,
+                            contests = lobbyViewModel.getFantasyContests(matchId),
+                            myTeams = myTeams.filter { joined.contains(it.contestId) },
+                            onNavigateBack = { navController.popBackStack() }
+                        )
+                    }
+                }
+
                 composable(
                     route = "fantasy/team-builder/{matchId}/{contestId}",
                     arguments = listOf(
