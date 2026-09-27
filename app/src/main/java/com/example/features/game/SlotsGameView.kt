@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -44,31 +43,8 @@ fun SlotsGameView(
     var winningReels by remember { mutableStateOf<List<Boolean>?>(null) }
     var gameOver by remember { mutableStateOf(false) }
     val stake = 10.0
-    var stakeDeducted by rememberSaveable { mutableStateOf(feeAlreadyPaid) }
-    var stakePending by rememberSaveable { mutableStateOf(false) }
-    var entryError by remember { mutableStateOf<String?>(null) }
 
-    val scope = rememberCoroutineScope()
-
-    fun requireStake(action: () -> Unit) {
-        if (stakeDeducted) {
-            action()
-            return
-        }
-        if (stakePending) return
-        stakePending = true
-        scope.launch {
-            val result = viewModel.deductStake(stake, "Entry: Golden Pharaoh Spins")
-            stakePending = false
-            if (result.isSuccess) {
-                stakeDeducted = true
-                entryError = null
-                action()
-            } else {
-                entryError = result.exceptionOrNull()?.message ?: "Insufficient balance to play."
-            }
-        }
-    }
+    val (stakeState, requireStake, scope) = useGameStake(stake, "Golden Pharaoh Spins", viewModel, feeAlreadyPaid)
 
     fun spin() {
         if (spinning || gameOver) return
@@ -121,7 +97,7 @@ fun SlotsGameView(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
-                entryError?.let {
+                stakeState.entryError?.let {
                     Surface(
                         color = Color(0xFFFF5252).copy(alpha = 0.12f),
                         shape = RoundedCornerShape(10.dp),

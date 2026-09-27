@@ -32,30 +32,8 @@ fun SnakesAndLaddersView(
     val target = 30
     val maxRolls = 10
     var rollsLeft by remember { mutableStateOf(maxRolls) }
-    var stakeDeducted by rememberSaveable { mutableStateOf(feeAlreadyPaid) }
-    var stakePending by rememberSaveable { mutableStateOf(false) }
-    var entryError by remember { mutableStateOf<String?>(null) }
-    val scope = rememberCoroutineScope()
 
-    fun requireStake(action: () -> Unit) {
-        if (stakeDeducted) {
-            action()
-            return
-        }
-        if (stakePending) return
-        stakePending = true
-        scope.launch {
-            val result = viewModel.deductStake(stake, "Entry: Snakes & Ladders Rush")
-            stakePending = false
-            if (result.isSuccess) {
-                stakeDeducted = true
-                entryError = null
-                action()
-            } else {
-                entryError = result.exceptionOrNull()?.message ?: "Insufficient balance to play."
-            }
-        }
-    }
+    val (stakeState, requireStake, scope) = useGameStake(stake, "Snakes & Ladders Rush", viewModel, feeAlreadyPaid)
 
     fun roll() {
         if (gameOver) return
@@ -99,7 +77,7 @@ fun SnakesAndLaddersView(
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             Column(Modifier.fillMaxSize().padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-        entryError?.let {
+        stakeState.entryError?.let {
             Text(it, color = Color.Red, fontSize = 12.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
         }
         Text("Position: $pos / $target   Rolls left: $rollsLeft", color = GamingGoldAccent, fontSize = 20.sp, fontWeight = FontWeight.Black)

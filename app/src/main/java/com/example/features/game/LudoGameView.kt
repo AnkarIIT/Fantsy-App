@@ -75,31 +75,9 @@ fun LudoGameView(
     var message by remember { mutableStateOf("Your turn — roll the dice") }
     var gameOver by remember { mutableStateOf(false) }
     var win by remember { mutableStateOf(false) }
-    var stakeDeducted by rememberSaveable { mutableStateOf(feeAlreadyPaid) }
-    var stakePending by rememberSaveable { mutableStateOf(false) }
-    var entryError by remember { mutableStateOf<String?>(null) }
     val stake = 20.0
-    val scope = rememberCoroutineScope()
 
-    fun requireStake(action: () -> Unit) {
-        if (stakeDeducted) {
-            action()
-            return
-        }
-        if (stakePending) return
-        stakePending = true
-        scope.launch {
-            val result = viewModel.deductStake(stake, "Entry: Ludo Empire")
-            stakePending = false
-            if (result.isSuccess) {
-                stakeDeducted = true
-                entryError = null
-                action()
-            } else {
-                entryError = result.exceptionOrNull()?.message ?: "Insufficient balance to play."
-            }
-        }
-    }
+    val (stakeState, requireStake, scope) = useGameStake(stake, "Ludo Empire", viewModel, feeAlreadyPaid)
 
     fun isHome(tokens: IntArray) = tokens.all { it == DONE }
 
@@ -196,7 +174,7 @@ fun LudoGameView(
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             Column(Modifier.fillMaxSize().padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        entryError?.let {
+        stakeState.entryError?.let {
             Text(it, color = Color.Red, fontSize = 12.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
         }
         Text(message, color = GamingGoldAccent, fontWeight = FontWeight.Bold, fontSize = 13.sp, textAlign = TextAlign.Center)

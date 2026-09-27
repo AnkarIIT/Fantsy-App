@@ -35,31 +35,8 @@ fun CarromGameView(
     var win by remember { mutableStateOf(false) }
     val stake = 30.0
     var strikerPos by remember { mutableStateOf(Offset(200f, 620f)) }
-    var stakeDeducted by rememberSaveable { mutableStateOf(feeAlreadyPaid) }
-    var stakePending by rememberSaveable { mutableStateOf(false) }
-    var entryError by remember { mutableStateOf<String?>(null) }
 
-    val scope = rememberCoroutineScope()
-
-    fun requireStake(action: () -> Unit) {
-        if (stakeDeducted) {
-            action()
-            return
-        }
-        if (stakePending) return
-        stakePending = true
-        scope.launch {
-            val result = viewModel.deductStake(stake, "Entry: Carrom Pro League")
-            stakePending = false
-            if (result.isSuccess) {
-                stakeDeducted = true
-                entryError = null
-                action()
-            } else {
-                entryError = result.exceptionOrNull()?.message ?: "Insufficient balance to play."
-            }
-        }
-    }
+    val (stakeState, requireStake, scope) = useGameStake(stake, "Carrom Pro League", viewModel, feeAlreadyPaid)
 
     fun shoot(strength: Float) {
         if (gameOver || shots <= 0) return
@@ -96,7 +73,7 @@ fun CarromGameView(
                 modifier = Modifier.fillMaxSize().padding(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-        entryError?.let {
+        stakeState.entryError?.let {
             Text(it, color = Color.Red, fontSize = 12.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
         }
         Text("Score: $score   Shots left: $shots", color = GamingNeonCyan, fontSize = 14.sp)

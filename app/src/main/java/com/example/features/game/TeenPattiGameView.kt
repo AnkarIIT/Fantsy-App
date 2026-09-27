@@ -4,7 +4,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -15,7 +14,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.features.lobby.LobbyViewModel
 import com.example.ui.theme.*
-import kotlinx.coroutines.launch
 
 private val teenPattiRanks = listOf("2","3","4","5","6","7","8","9","10","J","Q","K","A")
 private val teenPattiSuits = listOf("♠","♥","♦","♣")
@@ -58,30 +56,8 @@ fun TeenPattiGameView(
     var revealed by remember { mutableStateOf(false) }
     var won by remember { mutableStateOf(false) }
     val stake = 25.0
-    var stakeDeducted by rememberSaveable { mutableStateOf(feeAlreadyPaid) }
-    var stakePending by rememberSaveable { mutableStateOf(false) }
-    var entryError by remember { mutableStateOf<String?>(null) }
-    val scope = rememberCoroutineScope()
 
-    fun requireStake(action: () -> Unit) {
-        if (stakeDeducted) {
-            action()
-            return
-        }
-        if (stakePending) return
-        stakePending = true
-        scope.launch {
-            val result = viewModel.deductStake(stake, "Entry: Teen Patti Clash")
-            stakePending = false
-            if (result.isSuccess) {
-                stakeDeducted = true
-                entryError = null
-                action()
-            } else {
-                entryError = result.exceptionOrNull()?.message ?: "Insufficient balance to play."
-            }
-        }
-    }
+    val (stakeState, requireStake, scope) = useGameStake(stake, "Teen Patti Clash", viewModel, feeAlreadyPaid)
 
     fun playHand() {
         if (revealed) return
@@ -105,7 +81,7 @@ fun TeenPattiGameView(
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             Column(Modifier.fillMaxSize().padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-        entryError?.let {
+        stakeState.entryError?.let {
             Text(it, color = Color.Red, fontSize = 12.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
         }
         Text("Compare hands. Trails and high sequences win.", color = GamingTextMuted)

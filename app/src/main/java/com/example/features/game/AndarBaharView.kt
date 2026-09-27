@@ -104,31 +104,9 @@ fun AndarBaharView(
     var dealing by remember { mutableStateOf(false) }
     var won by remember { mutableStateOf(false) }
     var showResult by remember { mutableStateOf(false) }
-    var stakeDeducted by rememberSaveable { mutableStateOf(feeAlreadyPaid) }
-    var stakePending by rememberSaveable { mutableStateOf(false) }
-    var entryError by remember { mutableStateOf<String?>(null) }
     val stake = 25.0
-    val scope = rememberCoroutineScope()
 
-    fun requireStake(action: () -> Unit) {
-        if (stakeDeducted) {
-            action()
-            return
-        }
-        if (stakePending) return
-        stakePending = true
-        scope.launch {
-            val result = viewModel.deductStake(stake, "Entry: Andar Bahar Elite")
-            stakePending = false
-            if (result.isSuccess) {
-                stakeDeducted = true
-                entryError = null
-                action()
-            } else {
-                entryError = result.exceptionOrNull()?.message ?: "Insufficient balance to play."
-            }
-        }
-    }
+    val (stakeState, requireStake, scope) = useGameStake(stake, "Andar Bahar Elite", viewModel, feeAlreadyPaid)
 
     fun placeBet(side: String) {
         requireStake {
@@ -170,7 +148,7 @@ fun AndarBaharView(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
-                entryError?.let {
+                stakeState.entryError?.let {
                     Text(it, color = Color.Red, fontSize = 12.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
                 }
 

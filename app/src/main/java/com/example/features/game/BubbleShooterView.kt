@@ -46,30 +46,8 @@ fun BubbleShooterView(
     var win by remember { mutableStateOf(false) }
     var message by remember { mutableStateOf<String?>(null) }
     val stake = 15.0
-    var stakeDeducted by rememberSaveable { mutableStateOf(feeAlreadyPaid) }
-    var stakePending by rememberSaveable { mutableStateOf(false) }
-    var entryError by remember { mutableStateOf<String?>(null) }
-    val scope = rememberCoroutineScope()
 
-    fun requireStake(action: () -> Unit) {
-        if (stakeDeducted) {
-            action()
-            return
-        }
-        if (stakePending) return
-        stakePending = true
-        scope.launch {
-            val result = viewModel.deductStake(stake, "Entry: Bubble Blast Royale")
-            stakePending = false
-            if (result.isSuccess) {
-                stakeDeducted = true
-                entryError = null
-                action()
-            } else {
-                entryError = result.exceptionOrNull()?.message ?: "Insufficient balance to play."
-            }
-        }
-    }
+    val (stakeState, requireStake, scope) = useGameStake(stake, "Bubble Blast Royale", viewModel, feeAlreadyPaid)
 
     fun neighborCells(r: Int, c: Int): List<Pair<Int, Int>> {
         val list = mutableListOf<Pair<Int, Int>>()
@@ -173,7 +151,7 @@ fun BubbleShooterView(
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             Column(Modifier.fillMaxSize().padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-        entryError?.let {
+        stakeState.entryError?.let {
             Text(it, color = Color.Red, fontSize = 12.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
         }
         Text("Score: $score   Aim the angle and pop groups of 3+ of the same color.", color = GamingTextMuted, fontSize = 12.sp, textAlign = TextAlign.Center)
